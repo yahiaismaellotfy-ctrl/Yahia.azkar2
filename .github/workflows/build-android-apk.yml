@@ -16,6 +16,7 @@ jobs:
         run: |
           ZIP_FILE=$(ls -1 *.zip 2>/dev/null | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
+            echo "Extracting $ZIP_FILE..."
             unzip -o "$ZIP_FILE"
           fi
 
@@ -30,13 +31,13 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Accept Android SDK Licenses & Install SDK 36
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          SDKMGR=$(command -v sdkmanager || find "$ANDROID_HOME" -name sdkmanager -type f 2>/dev/null | head -n 1)
+          yes | "$SDKMGR" --licenses || true
+          "$SDKMGR" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install dependencies & build web bundle
         run: |
@@ -47,6 +48,7 @@ jobs:
       - name: Build Debug APK
         working-directory: android
         run: |
+          echo "sdk.dir=${ANDROID_HOME:-/usr/local/lib/android/sdk}" > local.properties
           chmod +x gradlew
           ./gradlew assembleDebug
 
